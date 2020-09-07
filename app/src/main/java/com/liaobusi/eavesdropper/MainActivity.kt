@@ -1,22 +1,35 @@
 package com.liaobusi.eavesdropper
 
 import android.Manifest
+import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
-import androidx.appcompat.app.AppCompatActivity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.Settings
+import android.telephony.TelephonyManager
 import android.text.TextUtils
 import android.util.Log
 import android.view.Window
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import com.blankj.utilcode.util.AppUtils
-import com.blankj.utilcode.util.PermissionUtils
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.os.EnvironmentCompat
+import com.blankj.utilcode.util.FileUtils
 import com.blankj.utilcode.util.ToastUtils
+import com.tencent.wcdb.database.SQLiteCipherSpec
+import com.tencent.wcdb.database.SQLiteDatabase
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import java.io.File
+import java.math.BigInteger
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
+import java.security.Permission
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,16 +44,40 @@ class MainActivity : AppCompatActivity() {
             ToastUtils.showLong("请打开Eavesdropper读取通知的权限")
         }
 
+
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(
+                Manifest.permission.READ_SMS,
+                Manifest.permission.READ_CONTACTS,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.RECEIVE_SMS,
+                Manifest.permission.READ_PHONE_STATE
+            ),
+            1
+        )
+
+
         startService(intent)
         text.text = sp.getString("zhifubao", "未设置")
         save.setOnClickListener {
             val input = et.editableText.toString()
             if (input.isNotEmpty()) {
-                sp.edit().putString("zhifubao", input).commit()
+                sp.edit().putString("zhifubao", input).apply()
                 text.text = input
             }
         }
-        Log.e("eavesdrop","init")
+
+        smsSwitch.isChecked = sp.getBoolean("enable_sms", false)
+        smsSwitch.setOnCheckedChangeListener { _, isChecked ->
+            sp.edit().putBoolean("enable_sms", isChecked).apply()
+        }
+
+        smsSwitch2.isChecked = sp.getBoolean("enable_sms2", false)
+        smsSwitch2.setOnCheckedChangeListener { _, isChecked ->
+            sp.edit().putBoolean("enable_sms2", isChecked).apply()
+        }
 
     }
 
@@ -49,7 +86,7 @@ class MainActivity : AppCompatActivity() {
     private fun isEnabled(): Boolean {
         val pkgName = packageName;
         val flat =
-            Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners");
+            Settings.Secure.getString(contentResolver, "enabled_notification_listeners");
         if (!TextUtils.isEmpty(flat)) {
             val names = flat.split(":");
             for (name in names) {
@@ -65,10 +102,10 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    fun openNotificationListenSettings() {
+    private fun openNotificationListenSettings() {
         try {
             val notificationIntent =
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) {
+                if (Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) {
                     Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
                 } else {
                     Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");

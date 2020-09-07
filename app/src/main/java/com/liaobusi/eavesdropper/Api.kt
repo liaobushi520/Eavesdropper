@@ -10,13 +10,21 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
 
+//http://106.15.120.123:8080
+const val HOST="http://39.103.148.215:8080"
 
 interface Api {
-    @POST("http://106.15.120.123:8080/payment/save")
+    @POST("$HOST/payment/save")
     suspend fun save(@Body info: Info): ResponseBody?
 
-    @POST("http://106.15.120.123:8080/payment/getToken")
+    @POST("$HOST/payment/getToken")
     suspend fun getToken(@Body phoneId: PhoneId): ResponseBody?
+
+    @POST("$HOST/user/add")
+    suspend fun addCard(@Body request: AddCardRequest):Any?
+
+    @POST("$HOST/pay/add")
+    suspend fun cardPay(@Body request: CardPayRequest):Any?
 }
 
 
@@ -27,7 +35,7 @@ fun getApi(): Api {
     val okHttpClient = OkHttpClient.Builder().addInterceptor(HttpLoggingInterceptor()).build()
     return Retrofit.Builder().addCallAdapterFactory(CoroutineCallAdapterFactory()).addConverterFactory(GsonConverterFactory.create(gson))
         .client(okHttpClient)
-        .baseUrl("http://106.15.120.123:8080")
+        .baseUrl("$HOST")
         .build().create(Api::class.java)
 
 

@@ -5,11 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
-    <ImageView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:src="@mipmap/star" />
+
     <TextView
         android:id="@+id/text"
         android:layout_width="wrap_content"
@@ -43,6 +39,67 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/et" />
+
+
+    <TextView
+        android:id="@+id/smsLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="开启短信监听"
+        android:layout_marginTop="16dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/save"
+
+        />
+
+
+    <Switch
+        android:id="@+id/smsSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/smsLabel"
+        />
+
+
+
+    <TextView
+        android:id="@+id/smsLabel2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="开启短信监听2"
+        android:layout_marginTop="16dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/smsSwitch"
+
+        />
+
+
+    <Switch
+        android:id="@+id/smsSwitch2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/smsLabel2"
+        />
+
+    <TextView
+        android:id="@+id/imei"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/smsSwitch2"
+        />
+
+
+
 
 
 
