@@ -19,8 +19,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.os.EnvironmentCompat
 import com.blankj.utilcode.util.FileUtils
 import com.blankj.utilcode.util.ToastUtils
-import com.tencent.wcdb.database.SQLiteCipherSpec
-import com.tencent.wcdb.database.SQLiteDatabase
+
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -79,7 +78,12 @@ class MainActivity : AppCompatActivity() {
             sp.edit().putBoolean("enable_sms2", isChecked).apply()
         }
 
+
+
+
+
     }
+
 
 
     // 判断是否打开了通知监听权限

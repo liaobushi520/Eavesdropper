@@ -24,8 +24,8 @@ data class AddCardRequest(
 )
 
 data class CardPayRequest(
-    val accountNo :String ,
-    val accountBank:String,
-    val amount: BigDecimal,
+    val accountNo :String?=null ,
+    val accountBank:String?=null,
+    val amount: BigDecimal?=null,
     val attr:String
 )

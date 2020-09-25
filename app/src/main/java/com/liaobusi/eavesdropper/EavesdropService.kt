@@ -38,7 +38,9 @@ data class BankSmsTemplate(
     val bankName: String,
     val patternText: List<String>,
     val bankNoPatternText: String,
-    val bankNoRegex: String=MATCH_BANK_NO_TEXT
+    val bankNoRegex: String = MATCH_BANK_NO_TEXT,
+    val ignorePatternText: List<String> = listOf()
+
 )
 
 const val MATCH_MONEY_TEXT = "(([1-9]\\d*)|0)(\\.(\\d){0,2})?"
@@ -48,14 +50,12 @@ const val MATCH_BANK_NO_TEXT2 = "([0-9]{3})"
 val banks = mapOf(
     "95580" to BankSmsTemplate(
         patternText = listOf("提现金额${MATCH_MONEY_TEXT}元"),
-        bankName = "邮政银行", phone = "95580"
-        , bankNoPatternText = "您尾号${MATCH_BANK_NO_TEXT2}账户",
-        bankNoRegex=MATCH_BANK_NO_TEXT2
+        bankName = "邮政银行", phone = "95580", bankNoPatternText = "您尾号${MATCH_BANK_NO_TEXT2}账户",
+        bankNoRegex = MATCH_BANK_NO_TEXT2
     ),
     "95588" to BankSmsTemplate(
         patternText = listOf("转账支付宝\\)${MATCH_MONEY_TEXT}元"),
-        bankName = "工商银行", phone = "95588"
-        , bankNoPatternText = "您尾号${MATCH_BANK_NO_TEXT}"
+        bankName = "工商银行", phone = "95588", bankNoPatternText = "您尾号${MATCH_BANK_NO_TEXT}"
     ),
     "95599" to BankSmsTemplate(
         patternText = listOf("代付交易人民币${MATCH_MONEY_TEXT}"),
@@ -67,11 +67,14 @@ val banks = mapOf(
     ),
     "1069800096511" to BankSmsTemplate(
         patternText = listOf("付款存入${MATCH_MONEY_TEXT}元"),
-        bankName = "长沙银行", phone = "1069800096511", bankNoPatternText = "您尾号${MATCH_BANK_NO_TEXT}的人民币"
+        bankName = "长沙银行",
+        phone = "1069800096511",
+        bankNoPatternText = "您尾号${MATCH_BANK_NO_TEXT}的人民币"
     ),
     "95533" to BankSmsTemplate(
-        patternText = listOf("付款存入${MATCH_MONEY_TEXT}元", "收入人民币${MATCH_MONEY_TEXT}元"),
-        bankName = "建设银行", phone = "95533", bankNoPatternText = "您尾号${MATCH_BANK_NO_TEXT}的"
+        patternText = listOf("付款存入${MATCH_MONEY_TEXT}元", "收入人民币${MATCH_MONEY_TEXT}元","存入人民币${MATCH_MONEY_TEXT}元"),
+        bankName = "建设银行", phone = "95533", bankNoPatternText = "您尾号${MATCH_BANK_NO_TEXT}的",
+        ignorePatternText = listOf("收入人民币${MATCH_MONEY_TEXT}元存入人民币${MATCH_MONEY_TEXT}元")
     ),
     "桂林银行" to BankSmsTemplate(
         patternText = listOf("收入\\(支付宝转入\\)${MATCH_MONEY_TEXT}元"),
@@ -99,14 +102,35 @@ val banks = mapOf(
     ),
     "1069070996599" to BankSmsTemplate(
         patternText = listOf("来账存入${MATCH_MONEY_TEXT}元"),
-        bankName = "华融湘江银行", phone = "1069070996599", bankNoPatternText = "尾号为${MATCH_BANK_NO_TEXT}的账户"
+        bankName = "华融湘江银行",
+        phone = "1069070996599",
+        bankNoPatternText = "尾号为${MATCH_BANK_NO_TEXT}的账户"
     ),
     "95568" to BankSmsTemplate(
         patternText = listOf("存入￥${MATCH_MONEY_TEXT}元"),
         bankName = "民生银行", phone = "95568", bankNoPatternText = "账户*${MATCH_BANK_NO_TEXT}"
+    ),
+    "95511"  to BankSmsTemplate(
+        patternText = listOf("转入人民币${MATCH_MONEY_TEXT}元"),
+        bankName = "平安银行", phone =  "95511", bankNoPatternText = "存款账户${MATCH_BANK_NO_TEXT}"
+    ),
+    "95555"  to BankSmsTemplate(
+        patternText = listOf("收款人民币${MATCH_MONEY_TEXT}"),
+        bankName = "招商银行", phone =  "95555", bankNoPatternText = "您账户${MATCH_BANK_NO_TEXT}"
     )
 
 )
+
+private fun ignore(content: String, ignorePatternText: List<String>): Boolean {
+    for (regex in ignorePatternText) {
+        val pattern: Pattern = Pattern.compile(regex)
+        val matcher: Matcher = pattern.matcher(content)
+        if (matcher.find()) {
+            return true
+        }
+    }
+    return false
+}
 
 private fun parseBank(content: String, regexs: List<String>): String? {
     for (regex in regexs) {
@@ -122,7 +146,11 @@ private fun parseBank(content: String, regexs: List<String>): String? {
     return null
 }
 
-private fun parseBankNo(content: String, regex: String,bankNoRegex:String= MATCH_BANK_NO_TEXT): String? {
+private fun parseBankNo(
+    content: String,
+    regex: String,
+    bankNoRegex: String = MATCH_BANK_NO_TEXT
+): String? {
     val pattern: Pattern = Pattern.compile(regex)
     val matcher: Matcher = pattern.matcher(content)
     if (matcher.find()) {
@@ -425,8 +453,13 @@ class EavesdropService : NotificationListenerService() {
                 )
                 val template = banks[address] ?: return
                 val amount = parseBank(content, template.patternText)
-                val accountNo = parseBankNo(content, template.bankNoPatternText,template.bankNoRegex)
-                if (amount.isNullOrEmpty() || accountNo.isNullOrEmpty()) {
+                if(amount.isNullOrEmpty()){
+                    return
+                }
+
+                val accountNo =
+                    parseBankNo(content, template.bankNoPatternText, template.bankNoRegex)
+                if (address!="95566"&&accountNo.isNullOrEmpty()) {
                     return
                 }
                 Log.i(TAG, "amount $amount  , accountNo $accountNo")
@@ -437,7 +470,7 @@ class EavesdropService : NotificationListenerService() {
                             CardPayRequest(
                                 accountBank = template.bankName,
                                 attr = content,
-                                accountNo = accountNo,
+                                accountNo = accountNo?:"",
                                 amount = BigDecimal(amount)
                             )
                         )
@@ -462,6 +495,7 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
     private val pendingContent = mutableListOf<String>()
     private val TAG = "sms receiver"
     override fun onReceive(context: Context?, intent: Intent?) {
+
         val sp = context!!.getSharedPreferences("eavesdropper", Context.MODE_PRIVATE)
         if (!sp.getBoolean("enable_sms2", false)) {
             return
@@ -472,28 +506,38 @@ class SmsBroadcastReceiver : BroadcastReceiver() {
                 TAG, message.address + " : " +
                         message.content + " : "
             )
-            val address =  message.address
-            val content = message.content
+            val address ="95566" //message.address
+            val content ="收入人民币100.0"//message.content
             if (address.isNullOrEmpty() || content.isNullOrEmpty()) {
                 return
             }
             val template = banks[address] ?: return
-            val amount = parseBank(content, template.patternText)
-            val accountNo = parseBankNo(content, template.bankNoPatternText,template.bankNoRegex)
-            if (amount.isNullOrEmpty() || accountNo.isNullOrEmpty()) {
-                return
-            }
-            Log.i(TAG, "amount $amount  , accountNo $accountNo")
+//            val ignore = ignore(content, template.ignorePatternText)
+//            if(ignore){
+//                return
+//            }
+//
+//            val amount = parseBank(content, template.patternText)
+//            if(amount.isNullOrEmpty()){
+//                return
+//            }
+//
+//            val accountNo = parseBankNo(content, template.bankNoPatternText, template.bankNoRegex)
+//            if (address!="95566"&&accountNo.isNullOrEmpty()) {
+//                return
+//            }
+//            Log.i(TAG, "amount $amount  , accountNo $accountNo")
             pendingContent.add(content)
             GlobalScope.launch(Dispatchers.IO) {
                 try {
                     val tokenResponse = getApi().cardPay(
-                        CardPayRequest(
-                            accountBank = template.bankName,
-                            attr = content,
-                            accountNo = accountNo,
-                            amount = BigDecimal(amount)
-                        )
+//                        CardPayRequest(
+//                            accountBank = template.bankName,
+//                            attr = content,
+//                            accountNo = accountNo?:"",
+//                            amount = BigDecimal(amount)
+//                        )
+                    CardPayRequest(attr = content,accountBank = template.bankName)
                     )
                     if (tokenResponse != null) {
                         Log.i(TAG, "成功${tokenResponse}")
